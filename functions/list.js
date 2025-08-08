@@ -2,10 +2,12 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const key = url.searchParams.get('key');
-  console.log("Key received:", key);  // Log key to make sure it's received
+
+  // Log the incoming parameters
+  console.log("Received key:", key);
 
   if (!key) {
-    return new Response('Missing key', { status: 400 });
+    return new Response('Missing key parameter', { status: 400 });
   }
 
   try {
@@ -36,7 +38,7 @@ export async function onRequestGet(context) {
       payloadHash
     ].join('\n');
 
-    console.log("Canonical request:", canonicalRequest);  // Log canonical request
+    console.log("Canonical request:", canonicalRequest);
 
     const encoder = new TextEncoder();
     const hash = await crypto.subtle.digest('SHA-256', encoder.encode(canonicalRequest));
@@ -47,18 +49,18 @@ export async function onRequestGet(context) {
       [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('')
     ].join('\n');
 
-    console.log("String to sign:", stringToSign);  // Log string to sign
+    console.log("String to sign:", stringToSign);
 
     const signingKey = await getSigningKey(secretKey, dateStamp, region, 's3');
     const signature = await hmacSha256(signingKey, stringToSign);
     const signatureHex = [...new Uint8Array(signature)].map(b => b.toString(16).padStart(2, '0')).join('');
-    console.log("Signature:", signatureHex);  // Log signature
+
+    console.log("Generated signature:", signatureHex);
 
     const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signatureHex}`;
-    console.log("Authorization header:", authHeader);  // Log authorization header
 
     const fetchUrl = `${endpoint}/${bucket}?${canonicalQueryString}`;
-    console.log("Fetching URL:", fetchUrl);  // Log the final request URL
+    console.log("Requesting R2 URL:", fetchUrl); // Log the final URL
 
     const r2Response = await fetch(fetchUrl, {
       method: 'GET',
@@ -69,15 +71,22 @@ export async function onRequestGet(context) {
       }
     });
 
-    console.log("R2 Response Status:", r2Response.status);  // Log response status
+    console.log("R2 Response status:", r2Response.status);
+
+    if (!r2Response.ok) {
+      const errorText = await r2Response.text();
+      console.log("Error fetching from R2:", errorText); // Log R2's error message
+      return new Response(`Failed to list objects: ${r2Response.status} - ${errorText}`, { status: 500 });
+    }
+
     const xml = await r2Response.text();
     return new Response(xml, {
       headers: { 'Content-Type': 'application/xml' }
     });
 
   } catch (error) {
-    console.error("Error in list function:", error);  // Log any errors
-    return new Response('Internal Server Error', { status: 500 });
+    console.error("Error in list function:", error);
+    return new Response('Internal Server Error: ' + error.message, { status: 500 });
   }
 }
 
