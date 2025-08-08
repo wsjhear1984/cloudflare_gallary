@@ -1,0 +1,9 @@
+name = "cloudflare-r2-gallery"
+compatibility_date = "2025-08-08"
+pages_build_output_dir = "./public"
+
+[env.production.vars]
+R2_ACCESS_KEY = "your-access-key"
+R2_SECRET_KEY = "your-secret-key"
+R2_BUCKET = "onedrivesync"
+R2_ENDPOINT = "https://<your_account_id>.r2.cloudflarestorage.com"
