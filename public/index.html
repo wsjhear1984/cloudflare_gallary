@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S3 Media Gallery (Presigned URLs)</title>
+    <title>S3 Media Gallery</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         h1 {
             text-align: center;
             color: white;
@@ -20,12 +30,60 @@
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
+
+        .manual-config {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .manual-config h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .manual-config textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .manual-config button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .manual-config button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+
+
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
+
         .media-item {
             position: relative;
             aspect-ratio: 1;
@@ -37,19 +95,23 @@
             backdrop-filter: blur(5px);
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
+
         .media-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
+
         .media-item img, .media-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: transform 0.3s ease;
         }
+
         .media-item:hover img, .media-item:hover video {
             transform: scale(1.05);
         }
+
         .media-type-badge {
             position: absolute;
             top: 10px;
@@ -61,205 +123,543 @@
             font-size: 12px;
             font-weight: bold;
         }
-        /* Lightbox */
+
+        /* Lightbox Styles */
         .lightbox {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: rgba(0, 0, 0, 0.9);
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 1000;
-            opacity: 0; visibility: hidden;
+            opacity: 0;
+            visibility: hidden;
             transition: all 0.3s ease;
         }
+
         .lightbox.active {
-            opacity: 1; visibility: visible;
+            opacity: 1;
+            visibility: visible;
         }
+
         .lightbox-content {
-            max-width: 90%; max-height: 90%; position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
             animation: lightboxZoom 0.3s ease;
         }
+
         @keyframes lightboxZoom {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
+
         .lightbox-content img, .lightbox-content video {
-            max-width: 100%; max-height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             border-radius: 10px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
+
         .lightbox-close {
             position: absolute;
-            top: -40px; right: -40px;
-            width: 40px; height: 40px;
+            top: -40px;
+            right: -40px;
+            width: 40px;
+            height: 40px;
             background: rgba(255, 255, 255, 0.9);
-            border: none; border-radius: 50%;
+            border: none;
+            border-radius: 50%;
             cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 20px; font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
             transition: all 0.3s ease;
         }
+
         .lightbox-close:hover {
-            background: white; transform: scale(1.1);
+            background: white;
+            transform: scale(1.1);
         }
-        .loading { text-align: center; color: white; padding: 40px; font-size: 1.2em; }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
         .error {
             background: rgba(255, 107, 107, 0.2);
             border: 1px solid #ff6b6b;
-            color: white; padding: 15px; border-radius: 8px;
-            margin: 10px 0; white-space: pre-line;
-            font-family: monospace; font-size: 12px;
-            max-height: 300px; overflow-y: auto;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            white-space: pre-line;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
         }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .gallery {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 15px;
             }
-            h1 { font-size: 2em; }
+
+
+            h1 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>🖼️ S3 Media Gallery</h1>
-    <div id="gallery" class="gallery"></div>
-    <div id="loading" class="loading">Loading your media files... 📸</div>
-    <div id="error" class="error" style="display: none;"></div>
-</div>
+    <div class="container">
+        <h1>🖼️ S3 Media Gallery</h1>
+        
 
-<!-- Lightbox -->
-<div id="lightbox" class="lightbox" onclick="closeLightbox()">
-    <div class="lightbox-content" onclick="event.stopPropagation()">
-        <button class="lightbox-close" onclick="closeLightbox()">×</button>
-        <div id="lightbox-media"></div>
+
+        <div id="gallery" class="gallery"></div>
+        <div id="loading" class="loading" style="display: none;">Loading your media files... 📸</div>
+        <div id="error" class="error" style="display: none;"></div>
     </div>
-</div>
 
-<script>
-    const S3_CONFIG = {
-        endpoint: 'https://ef7512208d9b083079e81a03da10b441.r2.cloudflarestorage.com',
-        bucketName: 'onedrivesync',
-        prefix: 'Web/'
-    };
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <button class="lightbox-close" onclick="closeLightbox()">×</button>
+            <div id="lightbox-media"></div>
+        </div>
+    </div>
 
-    function showError(message) {
-        const errorEl = document.getElementById('error');
-        errorEl.textContent = message;
-        errorEl.style.display = 'block';
-        document.getElementById('loading').style.display = 'none';
-    }
-
-    function hideError() {
-        document.getElementById('error').style.display = 'none';
-    }
-
-    async function getPresignedUrl(key) {
-        // Change URL if backend is on a different server
-        const apiUrl = `/presign?key=${encodeURIComponent(key)}`;
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error(`Failed to get presigned URL for ${key}`);
-        const data = await response.json();
-        return data.url;
-    }
-
-    async function loadS3Objects() {
-        const url = `/list`;  // Calls the Cloudflare Worker
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to list objects: ${response.statusText}`);
-        const xmlText = await response.text();
-
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-        const contents = xmlDoc.querySelectorAll('Contents');
-
-        return Array.from(contents).map(content => ({
-            key: content.querySelector('Key')?.textContent,
-            size: parseInt(content.querySelector('Size')?.textContent || '0'),
-            lastModified: content.querySelector('LastModified')?.textContent
-        }));
-    }
-
-    async function createMediaObject(s3Object) {
-        const fileUrl = await getPresignedUrl(s3Object.key);
-        const extension = s3Object.key.split('.').pop().toLowerCase();
-        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
-        const videoExtensions = ['mp4', 'webm', 'ogg', 'avi', 'mov'];
-
-        let type = 'unknown';
-        if (imageExtensions.includes(extension)) type = 'image';
-        else if (videoExtensions.includes(extension)) type = 'video';
-
-        return {
-            url: fileUrl,
-            thumbnail: fileUrl,
-            type: type,
-            filename: s3Object.key.split('/').pop(),
-            size: s3Object.size,
-            lastModified: s3Object.lastModified
+    <script>
+        // S3 Configuration - Your Cloudflare R2 credentials
+        const S3_CONFIG = {
+            endpoint: 'https://ef7512208d9b083079e81a03da10b441.r2.cloudflarestorage.com',
+            bucketName: 'onedrivesync',
+            accessKey: 'b0f84705a5831d4943a197b504f04b68',
+            secretKey: '42c07160bc5ac0f819183ab1a9de451d9beea3066746d43628b1e45f4d908c89',
+            region: 'auto',
+            prefix: 'Web/',  // Your images folder
+            baseurl: 'https://wangstreet.xyz'
         };
-    }
 
-    async function loadGallery() {
-        hideError();
-        try {
-            const s3Objects = await loadS3Objects();
-            const filtered = s3Objects.filter(obj => obj.key && !obj.key.endsWith('/'));
+        // Demo data for testing (remove when connecting to real S3)
+        const demoData = [
+            { url: 'https://picsum.photos/400/400?random=1', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=1' },
+            { url: 'https://picsum.photos/400/600?random=2', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=2' },
+            { url: 'https://picsum.photos/600/400?random=3', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=3' },
+            { url: 'https://picsum.photos/500/500?random=4', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=4' },
+            { url: 'https://picsum.photos/400/500?random=5', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=5' },
+            { url: 'https://picsum.photos/550/400?random=6', type: 'image', thumbnail: 'https://picsum.photos/250/250?random=6' },
+        ];
 
-            const mediaFiles = [];
-            for (const obj of filtered) {
-                mediaFiles.push(await createMediaObject(obj));
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('gallery').style.display = show ? 'none' : 'grid';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            showLoading(false);
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // AWS Signature V4 Authentication
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        async function hmacSha256(key, message) {
+            const keyBuffer = typeof key === 'string' ? new TextEncoder().encode(key) : key;
+            const msgBuffer = new TextEncoder().encode(message);
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+            );
+            const signature = await crypto.subtle.sign('HMAC', cryptoKey, msgBuffer);
+            return new Uint8Array(signature);
+        }
+
+        function getAmzDate(date) {
+            return date.toISOString().replace(/[:\-]|\.\d{3}/g, '').slice(0, -1) + 'Z';
+        }
+
+        function getDateStamp(date) {
+            return date.toISOString().slice(0, 10).replace(/-/g, '');
+        }
+
+        async function getS3AuthHeaders(method, path, queryString = '') {
+            const now = new Date();
+            const amzDate = getAmzDate(now);
+            const dateStamp = getDateStamp(now);
+            
+            const host = S3_CONFIG.endpoint.replace('https://', '');
+            const region = S3_CONFIG.region;
+            const service = 's3';
+            
+            // Create canonical request
+            const canonicalUri = path;
+            const canonicalQueryString = queryString;
+            const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
+            const signedHeaders = 'host;x-amz-date';
+            const payloadHash = await sha256('');
+            
+            const canonicalRequest = [
+                method,
+                canonicalUri,
+                canonicalQueryString,
+                canonicalHeaders,
+                signedHeaders,
+                payloadHash
+            ].join('\n');
+
+            // Create string to sign
+            const algorithm = 'AWS4-HMAC-SHA256';
+            const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+            const stringToSign = [
+                algorithm,
+                amzDate,
+                credentialScope,
+                await sha256(canonicalRequest)
+            ].join('\n');
+
+            // Calculate signature
+            const kDate = await hmacSha256('AWS4' + S3_CONFIG.secretKey, dateStamp);
+            const kRegion = await hmacSha256(kDate, region);
+            const kService = await hmacSha256(kRegion, service);
+            const kSigning = await hmacSha256(kService, 'aws4_request');
+            const signature = await hmacSha256(kSigning, stringToSign);
+            
+            const signatureHex = Array.from(signature)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            // Create authorization header
+            const authorizationHeader = `${algorithm} Credential=${S3_CONFIG.accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signatureHex}`;
+
+            return {
+                'Authorization': authorizationHeader,
+                'X-Amz-Date': amzDate,
+                'X-Amz-Content-Sha256': payloadHash
+            };
+        }
+
+        function parseS3XmlResponse(xmlText) {
+            console.log('Parsing XML response...');
+            console.log('XML Content Preview:', xmlText.substring(0, 1000));
+            
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            
+            // Check for parsing errors
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+                console.error('XML Parser Error:', parserError.textContent);
+                throw new Error('Failed to parse S3 XML response');
+            }
+            
+            // Check for S3 errors
+            const error = xmlDoc.querySelector('Error');
+            if (error) {
+                const code = error.querySelector('Code')?.textContent || 'Unknown';
+                const message = error.querySelector('Message')?.textContent || 'Unknown error';
+                throw new Error(`S3 Error ${code}: ${message}`);
+            }
+            
+            const objects = [];
+            const contents = xmlDoc.querySelectorAll('Contents');
+            
+            console.log(`Found ${contents.length} Contents elements`);
+            
+            contents.forEach((content, index) => {
+                const key = content.querySelector('Key')?.textContent;
+                const size = parseInt(content.querySelector('Size')?.textContent || '0');
+                const lastModified = content.querySelector('LastModified')?.textContent;
+                
+                console.log(`Object ${index}:`, { key, size, lastModified });
+                
+                if (key) {
+                    objects.push({
+                        key: key,
+                        size: size,
+                        lastModified: lastModified
+                    });
+                }
+            });
+            
+            console.log(`Parsed ${objects.length} objects total:`, objects);
+            return objects;
+        }
+
+        async function loadS3Objects() {
+            const path = `/${S3_CONFIG.bucketName}`;
+            const queryString = `list-type=2&prefix=${encodeURIComponent(S3_CONFIG.prefix)}`;
+            
+            try {
+                const headers = await getS3AuthHeaders('GET', path, queryString);
+                const url = `${S3_CONFIG.endpoint}${path}?${queryString}`;
+                
+                console.log('Making authenticated request to:', url);
+                console.log('Request headers:', JSON.stringify(headers, null, 2));
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers,
+                    mode: 'cors'
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('S3 Response Error:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+                
+                const xmlText = await response.text();
+                console.log('S3 Response XML length:', xmlText.length);
+                console.log('XML Preview:', xmlText.substring(0, 500));
+                
+                return parseS3XmlResponse(xmlText);
+                
+            } catch (error) {
+                console.error('Detailed error:', error);
+                
+                // Enhanced error handling
+                if (error.message.includes('Failed to fetch') || 
+                    error.message.includes('Load failed') || 
+                    error.name === 'TypeError') {
+                    throw new Error(`
+CORS/Network Error: Cannot connect to your R2 bucket from browser.
+
+Possible solutions:
+1. Add CORS policy to your R2 bucket in Cloudflare dashboard
+2. Use the manual file list below
+3. Host this app on your own server with R2 access
+
+For now, you can manually list your files in the text area below.
+                    `);
+                }
+                
+                throw error;
+            }
+        }
+
+        function loadManualFiles() {
+            const manualInput = document.getElementById('manualFiles').value.trim();
+            
+            if (!manualInput) {
+                showError('Please enter file paths in the manual file list');
+                return;
             }
 
-            displayGallery(mediaFiles);
-            document.getElementById('loading').style.display = 'none';
-        } catch (err) {
-            console.error(err);
-            showError('Failed to load gallery: ' + err.message);
+            hideError();
+            showLoading(true);
+            
+            try {
+                const filePaths = manualInput.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line && !line.startsWith('#'));
+                
+                const s3Objects = filePaths.map(path => ({
+                    key: path,
+                    size: 0, // Unknown size for manual entries
+                    lastModified: new Date().toISOString()
+                }));
+                
+                console.log('Loading manual files:', s3Objects);
+                
+                const mediaFiles = s3Objects
+                    .map(obj => createMediaObject(obj))
+                    .filter(media => media.type !== 'unknown');
+
+                if (mediaFiles.length === 0) {
+                    showError('No supported media files found in your list');
+                    return;
+                }
+
+                displayGallery(mediaFiles);
+                showLoading(false);
+                
+            } catch (error) {
+                showError('Error processing manual file list');
+                console.error('Manual load error:', error);
+            }
         }
-    }
 
-    function displayGallery(mediaFiles) {
-        const gallery = document.getElementById('gallery');
-        gallery.innerHTML = '';
-        mediaFiles.forEach((media, index) => {
-            const item = document.createElement('div');
-            item.className = 'media-item';
-            item.onclick = () => openLightbox(media);
+        function createMediaObject(s3Object) {
+            const fileUrl = `${S3_CONFIG.baseurl}/${s3Object.key}`;
+            const extension = s3Object.key.split('.').pop().toLowerCase();
+            
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+            const videoExtensions = ['mp4', 'webm', 'ogg', 'avi', 'mov'];
+            
+            let type = 'unknown';
+            if (imageExtensions.includes(extension)) {
+                type = 'image';
+            } else if (videoExtensions.includes(extension)) {
+                type = 'video';
+            }
+            
+            return {
+                url: fileUrl,
+                thumbnail: type === 'image' ? fileUrl : fileUrl, // For videos, you might want to generate thumbnails
+                type: type,
+                filename: s3Object.key.split('/').pop(),
+                size: s3Object.size,
+                lastModified: s3Object.lastModified
+            };
+        }
 
-            const el = media.type === 'video'
-                ? `<video src="${media.thumbnail}" muted></video>`
-                : `<img src="${media.thumbnail}" alt="${media.filename}" loading="lazy">`;
+        async function loadGallery() {
+            if (!S3_CONFIG.endpoint || !S3_CONFIG.bucketName) {
+                showError('S3 configuration is incomplete. Please check your credentials.');
+                return;
+            }
 
-            item.innerHTML = `${el}<div class="media-type-badge">${media.type.toUpperCase()}</div>`;
-            gallery.appendChild(item);
+            hideError();
+            showLoading(true);
+
+            try {
+                console.log('Loading from Cloudflare R2:', {
+                    endpoint: S3_CONFIG.endpoint,
+                    bucket: S3_CONFIG.bucketName,
+                    prefix: S3_CONFIG.prefix
+                });
+
+                // Load objects from S3
+                const s3Objects = await loadS3Objects();
+                console.log('Raw S3 objects received:', s3Objects);
+                
+                // Filter out folder entries (keys ending with '/') and convert to media objects
+                const filteredObjects = s3Objects.filter(obj => {
+                    const isFolder = obj.key.endsWith('/');
+                    console.log(`Checking ${obj.key}: isFolder=${isFolder}, size=${obj.size}`);
+                    return !isFolder;
+                });
+                
+                console.log('Filtered objects (no folders):', filteredObjects);
+                
+                // Convert S3 objects to media objects with presigned URLs
+                console.log('Creating presigned URLs for direct browser access...');
+                const mediaFiles = [];
+                
+                for (const obj of filteredObjects) {
+                    const mediaObj = await createMediaObject(obj);
+                    mediaFiles.push(mediaObj);
+                }
+                
+                console.log('All media objects with presigned URLs:', mediaFiles);
+                
+                // Filter for supported media types
+                const supportedFiles = mediaFiles.filter(media => {
+                    const isSupported = media.type !== 'unknown';
+                    console.log(`${media.filename}: type=${media.type}, supported=${isSupported}`);
+                    return isSupported;
+                });
+                
+                console.log('Supported media files:', supportedFiles);
+
+                if (supportedFiles.length === 0) {
+                    showError(`No supported media files found in ${S3_CONFIG.prefix} folder`);
+                    return;
+                }
+
+                displayGallery(supportedFiles);
+                showLoading(false);
+                
+            } catch (error) {
+                showError('Failed to load media files from R2 bucket. Check console for details.');
+                console.error('Error loading gallery:', error);
+            }
+        }
+
+        function displayGallery(mediaFiles) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+
+            mediaFiles.forEach((media, index) => {
+                const item = document.createElement('div');
+                item.className = 'media-item';
+                item.onclick = () => openLightbox(media);
+
+                const mediaEl = media.type === 'video' 
+                    ? `<video src="${media.thumbnail}" muted></video>`
+                    : `<img src="${media.thumbnail}" alt="Media ${index + 1}" loading="lazy">`;
+
+                item.innerHTML = `
+                    ${mediaEl}
+                    <div class="media-type-badge">${media.type.toUpperCase()}</div>
+                `;
+
+                gallery.appendChild(item);
+            });
+        }
+
+        function openLightbox(media) {
+            const lightbox = document.getElementById('lightbox');
+            const mediaContainer = document.getElementById('lightbox-media');
+            
+            const mediaEl = media.type === 'video'
+                ? `<video src="${media.url}" controls autoplay style="max-width: 100%; max-height: 100%;"></video>`
+                : `<img src="${media.url}" alt="Full size media" style="max-width: 100%; max-height: 100%;">`;
+            
+            mediaContainer.innerHTML = mediaEl;
+            lightbox.classList.add('active');
+            
+            // Prevent body scroll when lightbox is open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Stop any playing videos
+            const video = document.querySelector('#lightbox-media video');
+            if (video) {
+                video.pause();
+            }
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
         });
-    }
 
-    function openLightbox(media) {
-        const lightbox = document.getElementById('lightbox');
-        const mediaContainer = document.getElementById('lightbox-media');
-        const mediaEl = media.type === 'video'
-            ? `<video src="${media.url}" controls autoplay></video>`
-            : `<img src="${media.url}" alt="Full size media">`;
-        mediaContainer.innerHTML = mediaEl;
-        lightbox.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeLightbox() {
-        const lightbox = document.getElementById('lightbox');
-        lightbox.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        const video = document.querySelector('#lightbox-media video');
-        if (video) video.pause();
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeLightbox();
-    });
-
-    window.addEventListener('load', loadGallery);
-</script>
+        // Load demo gallery on page load
+        window.addEventListener('load', () => {
+            loadGallery();
+        });
+    </script>
 </body>
-
 </html>
