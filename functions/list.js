@@ -1,15 +1,7 @@
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const url = new URL(request.url);
-  const key = url.searchParams.get('key');
 
-  // Log the incoming parameters
-  console.log("Received key:", key);
-
-  if (!key) {
-    return new Response('Missing key parameter', { status: 400 });
-  }
-
+  // No key parameter is required for listing objects
   try {
     const accessKey = env.R2_ACCESS_KEY;
     const secretKey = env.R2_SECRET_KEY;
@@ -38,7 +30,7 @@ export async function onRequestGet(context) {
       payloadHash
     ].join('\n');
 
-    console.log("Canonical request:", canonicalRequest);
+    console.log("Canonical request:", canonicalRequest);  // Log canonical request
 
     const encoder = new TextEncoder();
     const hash = await crypto.subtle.digest('SHA-256', encoder.encode(canonicalRequest));
@@ -49,13 +41,13 @@ export async function onRequestGet(context) {
       [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('')
     ].join('\n');
 
-    console.log("String to sign:", stringToSign);
+    console.log("String to sign:", stringToSign);  // Log string to sign
 
     const signingKey = await getSigningKey(secretKey, dateStamp, region, 's3');
     const signature = await hmacSha256(signingKey, stringToSign);
     const signatureHex = [...new Uint8Array(signature)].map(b => b.toString(16).padStart(2, '0')).join('');
 
-    console.log("Generated signature:", signatureHex);
+    console.log("Generated signature:", signatureHex);  // Log signature
 
     const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signatureHex}`;
 
