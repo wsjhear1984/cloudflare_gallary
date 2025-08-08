@@ -163,7 +163,7 @@
     }
 
     async function loadS3Objects() {
-        const url = `${S3_CONFIG.endpoint}/${S3_CONFIG.bucketName}?list-type=2&prefix=${encodeURIComponent(S3_CONFIG.prefix)}`;
+        const url = `/list`;  // Calls the Cloudflare Worker
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Failed to list objects: ${response.statusText}`);
         const xmlText = await response.text();
@@ -261,4 +261,5 @@
     window.addEventListener('load', loadGallery);
 </script>
 </body>
+
 </html>
