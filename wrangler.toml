@@ -1,9 +1,27 @@
 name = "cloudflare-r2-gallery"
 compatibility_date = "2025-08-08"
+
+# Define the Pages Build output directory
 pages_build_output_dir = "./public"
 
+# Worker configuration for the list API and presigned URL handling
+[[workers.dev]]
+binding = "env"
+route = "https://your-project.pages.dev/*"
+zone_id = "your-zone-id"
+
+# Define the environment variables for R2 (make sure these are set in Cloudflare Workers)
 [env.production.vars]
 R2_ACCESS_KEY = "your-access-key"
 R2_SECRET_KEY = "your-secret-key"
 R2_BUCKET = "onedrivesync"
-R2_ENDPOINT = "https://<your_account_id>.r2.cloudflarestorage.com"
+R2_ENDPOINT = "https://ef7512208d9b083079e81a03da10b441.r2.cloudflarestorage.com"
+
+# Cloudflare Pages Functions (for deploying Workers)
+[[pages.functions]]
+name = "presign"
+entry_point = "functions/presign.js"
+
+[[pages.functions]]
+name = "list"
+entry_point = "functions/list.js"
